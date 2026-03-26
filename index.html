@@ -186,6 +186,8 @@
   }
   .filter-btn:hover { border-color: var(--accent); color: var(--text); }
   .filter-btn.on { background: rgba(108,99,255,0.15); border-color: var(--accent); color: var(--accent); }
+  .filter-btn.exclude { border-style: dashed; }
+  .filter-btn.exclude.on { background: rgba(255,107,107,0.15); border-color: var(--high); color: var(--high); border-style: solid; }
 
   .search-box {
     width: 100%;
@@ -673,6 +675,8 @@
         <button class="filter-btn" data-filter="Email Course" onclick="toggleGwFilter(this)">Email Course</button>
         <button class="filter-btn" data-filter="Newsletter" onclick="toggleGwFilter(this)">Newsletter</button>
         <button class="filter-btn" data-filter="has-email" onclick="toggleGwFilter(this)">Has Email</button>
+        <span style="color:var(--text2);font-size:11px;margin-left:8px">|</span>
+        <button class="filter-btn exclude" data-filter="hide-competitors" onclick="toggleGwCompetitors(this)">Hide Ghostwriters / PGA</button>
       </div>
       <div class="tbl-wrap" style="max-height:600px">
         <table id="gwTable">
@@ -1087,6 +1091,8 @@ const gwProspects = [
 ];
 
 let gwActiveFilter = 'all';
+let gwHideCompetitors = false;
+const competitorKeywords = ['ghostwriting', 'ghostwriter', 'pga', 'premium ghostwriting academy', 'educational email'];
 
 function filterGhostwriting() {
   const q = document.getElementById('gwSearch').value.toLowerCase();
@@ -1097,6 +1103,15 @@ function filterGhostwriting() {
     const tag = r.dataset.tag;
     const svc = r.dataset.services;
     const email = r.dataset.email;
+    const company = r.dataset.company || '';
+    const position = r.dataset.position || '';
+
+    // Competitor exclusion filter
+    if (gwHideCompetitors) {
+      const isCompetitor = competitorKeywords.some(kw => company.includes(kw) || position.includes(kw));
+      if (isCompetitor) { r.style.display = 'none'; return; }
+    }
+
     let matchFilter = true;
     if (gwActiveFilter === 'Leak') matchFilter = tag === 'Leak';
     else if (gwActiveFilter === 'Faucet') matchFilter = tag === 'Faucet';
@@ -1112,9 +1127,15 @@ function filterGhostwriting() {
 }
 
 function toggleGwFilter(btn) {
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('on'));
+  document.querySelectorAll('.filter-btn:not(.exclude)').forEach(b => b.classList.remove('on'));
   btn.classList.add('on');
   gwActiveFilter = btn.dataset.filter;
+  filterGhostwriting();
+}
+
+function toggleGwCompetitors(btn) {
+  gwHideCompetitors = !gwHideCompetitors;
+  btn.classList.toggle('on', gwHideCompetitors);
   filterGhostwriting();
 }
 
@@ -1349,7 +1370,7 @@ function renderTables() {
     const tagClass = tag === 'Leak' ? 'leak' : 'faucet';
     const svcs = svc.split(', ').map(s => `<span class="badge svc">${s}</span>`).join('');
     const emailCol = e ? `<span style="font-family:var(--mono);font-size:11px">${e}</span>` : '<span style="color:var(--text2);font-size:11px">—</span>';
-    gwBody.innerHTML += `<tr data-tag="${tag}" data-services="${svc}" data-email="${e}"><td>${i+1}</td><td>${n}</td><td>${co}</td><td>${p}</td><td><span class="badge ${tagClass}">${tag}</span></td><td>${svcs}</td><td>${emailCol}</td></tr>`;
+    gwBody.innerHTML += `<tr data-tag="${tag}" data-services="${svc}" data-email="${e}" data-company="${co.toLowerCase()}" data-position="${p.toLowerCase()}"><td>${i+1}</td><td>${n}</td><td>${co}</td><td>${p}</td><td><span class="badge ${tagClass}">${tag}</span></td><td>${svcs}</td><td>${emailCol}</td></tr>`;
   });
   document.getElementById('gwEmailCount').textContent = emailCount;
   document.getElementById('gwResultCount').textContent = `Showing ${gwProspects.length} of ${gwProspects.length} prospects`;
