@@ -259,10 +259,101 @@
   .action-item strong { color: #fff; }
   .action-item .action-text { color: var(--text2); }
   .action-item .action-text strong { color: var(--text); }
+  /* Login Gate */
+  .login-gate {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+  }
+  .login-gate.hidden { display: none; }
+  .login-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 40px;
+    text-align: center;
+    max-width: 380px;
+    width: 90%;
+  }
+  .login-box h2 {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .login-box p {
+    color: var(--text2);
+    font-size: 13px;
+    margin-bottom: 24px;
+  }
+  .login-box input {
+    width: 100%;
+    padding: 14px 16px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 18px;
+    font-family: var(--mono);
+    text-align: center;
+    letter-spacing: 8px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .login-box input:focus { border-color: var(--accent); }
+  .login-box input.error {
+    border-color: var(--high);
+    animation: shake 0.4s ease;
+  }
+  .login-btn {
+    width: 100%;
+    margin-top: 16px;
+    padding: 12px;
+    background: var(--accent);
+    border: none;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: var(--font);
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .login-btn:hover { opacity: 0.85; }
+  .login-error {
+    color: var(--high);
+    font-size: 12px;
+    margin-top: 12px;
+    min-height: 18px;
+  }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-6px); }
+    75% { transform: translateX(6px); }
+  }
+  .app-content { display: none; }
+  .app-content.visible { display: block; }
 </style>
 </head>
 <body>
 
+<!-- PASSWORD GATE -->
+<div class="login-gate" id="loginGate">
+  <div class="login-box">
+    <h2>Network Intelligence</h2>
+    <p>Enter access code to continue</p>
+    <input type="password" id="codeInput" maxlength="10" placeholder="····" autofocus
+           onkeydown="if(event.key==='Enter')checkCode()">
+    <button class="login-btn" onclick="checkCode()">Unlock Dashboard</button>
+    <div class="login-error" id="loginError"></div>
+  </div>
+</div>
+
+<div class="app-content" id="appContent">
 <div class="header">
   <h1>LinkedIn Network Intelligence</h1>
   <p>Siddhant (Sidd) Chauhan &mdash; Generated March 25, 2026</p>
@@ -994,9 +1085,47 @@ function renderTables() {
   });
 }
 
-// === INIT ===
-createCharts();
-renderTables();
+// === INIT (deferred until auth) ===
+function initApp() {
+  createCharts();
+  renderTables();
+}
+
+// === PASSWORD AUTH ===
+const HASH = '191024c47d6c2b3c24a570326b7e29f09652ec8bc2bb1779d95783e8753d12db';
+
+async function sha256(text) {
+  const data = new TextEncoder().encode(text);
+  const buf = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+async function checkCode() {
+  const input = document.getElementById('codeInput');
+  const error = document.getElementById('loginError');
+  const hash = await sha256(input.value);
+
+  if (hash === HASH) {
+    sessionStorage.setItem('li_auth', '1');
+    document.getElementById('loginGate').classList.add('hidden');
+    document.getElementById('appContent').classList.add('visible');
+    initApp();
+  } else {
+    input.classList.add('error');
+    error.textContent = 'Wrong code. Try again.';
+    setTimeout(() => input.classList.remove('error'), 400);
+    input.value = '';
+    input.focus();
+  }
+}
+
+// Auto-unlock if already authenticated this session
+if (sessionStorage.getItem('li_auth') === '1') {
+  document.getElementById('loginGate').classList.add('hidden');
+  document.getElementById('appContent').classList.add('visible');
+  initApp();
+}
 </script>
+</div><!-- /app-content -->
 </body>
 </html>
