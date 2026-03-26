@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LinkedIn Network Analysis — Sidd Chauhan</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #131320;
+    --surface2: #1a1a2e;
+    --border: #2a2a3e;
+    --text: #e0e0ec;
+    --text2: #8888a0;
+    --accent: #6c63ff;
+    --accent2: #00d4aa;
+    --high: #ff6b6b;
+    --mid: #ffa726;
+    --low: #66bb6a;
+    --font: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    --mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+  .header {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    padding: 48px 32px 40px;
+    border-bottom: 1px solid var(--border);
+  }
+  .header h1 {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    margin-bottom: 4px;
+  }
+  .header p { color: var(--text2); font-size: 14px; }
+  .stats-bar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    margin: 0;
+  }
+  .stat-card {
+    background: var(--surface);
+    padding: 24px 20px;
+    text-align: center;
+  }
+  .stat-card .num {
+    font-size: 32px;
+    font-weight: 700;
+    font-family: var(--mono);
+    color: var(--accent);
+  }
+  .stat-card .label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text2);
+    margin-top: 4px;
+  }
+  .stat-card.warn .num { color: var(--high); }
+  .stat-card.good .num { color: var(--accent2); }
+
+  .container { max-width: 1400px; margin: 0 auto; padding: 24px; }
+
+  .tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 24px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--border);
+  }
+  .tab {
+    padding: 10px 20px;
+    background: transparent;
+    border: none;
+    color: var(--text2);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    font-family: var(--font);
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+  @media (max-width: 900px) {
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .card h3 {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .chart-container { position: relative; height: 300px; }
+  .chart-container.tall { height: 420px; }
+
+  /* Tables */
+  .tbl-wrap { overflow-x: auto; max-height: 500px; overflow-y: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th {
+    text-align: left;
+    padding: 10px 12px;
+    font-weight: 600;
+    color: var(--text2);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: var(--surface);
+    z-index: 1;
+  }
+  td {
+    padding: 8px 12px;
+    border-bottom: 1px solid rgba(42,42,62,0.5);
+    vertical-align: top;
+  }
+  tr:hover td { background: rgba(108,99,255,0.05); }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: var(--mono);
+  }
+  .badge.high { background: rgba(255,107,107,0.15); color: var(--high); }
+  .badge.medium { background: rgba(255,167,38,0.15); color: var(--mid); }
+  .badge.standard { background: rgba(102,187,106,0.15); color: var(--low); }
+  .badge.active { background: rgba(0,212,170,0.15); color: var(--accent2); }
+  .badge.warm { background: rgba(255,167,38,0.15); color: var(--mid); }
+  .badge.cold { background: rgba(136,136,160,0.15); color: var(--text2); }
+
+  .search-box {
+    width: 100%;
+    padding: 10px 14px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 13px;
+    font-family: var(--font);
+    margin-bottom: 16px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .search-box:focus { border-color: var(--accent); }
+  .search-box::placeholder { color: var(--text2); }
+
+  .gap-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(42,42,62,0.3);
+    font-size: 13px;
+  }
+  .gap-item .company { flex: 1; }
+  .gap-item .tag {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    background: rgba(255,107,107,0.1);
+    color: var(--high);
+    font-family: var(--mono);
+  }
+  .msg-snippet {
+    font-size: 12px;
+    color: var(--text2);
+    max-width: 400px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .count { font-family: var(--mono); color: var(--accent); font-weight: 600; }
+
+  /* Action Boxes */
+  .action-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent2);
+    border-radius: 0 12px 12px 0;
+    padding: 20px 24px;
+    margin-bottom: 24px;
+  }
+  .action-box .action-header {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--accent2);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .action-box .action-header::before {
+    content: '\u26A1';
+    font-size: 14px;
+  }
+  .action-item {
+    display: flex;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(42,42,62,0.3);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .action-item:last-child { border-bottom: none; }
+  .action-num {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    background: rgba(0,212,170,0.12);
+    color: var(--accent2);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    font-family: var(--mono);
+    margin-top: 1px;
+  }
+  .action-item strong { color: #fff; }
+  .action-item .action-text { color: var(--text2); }
+  .action-item .action-text strong { color: var(--text); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>LinkedIn Network Intelligence</h1>
+  <p>Siddhant (Sidd) Chauhan &mdash; Generated March 25, 2026</p>
+</div>
+
+<div class="stats-bar">
+  <div class="stat-card"><div class="num">3,692</div><div class="label">Connections</div></div>
+  <div class="stat-card good"><div class="num">785</div><div class="label">High Seniority</div></div>
+  <div class="stat-card"><div class="num">75</div><div class="label">Have Emails</div></div>
+  <div class="stat-card warn"><div class="num">87%</div><div class="label">Never Messaged</div></div>
+  <div class="stat-card"><div class="num">588</div><div class="label">Jobs Applied</div></div>
+  <div class="stat-card warn"><div class="num">433</div><div class="label">No Connections At</div></div>
+</div>
+
+<div class="container">
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('overview')">Overview</button>
+    <button class="tab" onclick="showTab('influence')">Influence Map</button>
+    <button class="tab" onclick="showTab('companies')">Company Intel</button>
+    <button class="tab" onclick="showTab('outreach')">Outreach</button>
+    <button class="tab" onclick="showTab('gaps')">Network Gaps</button>
+    <button class="tab" onclick="showTab('referrals')">Referral Paths</button>
+    <button class="tab" onclick="showTab('messages')">Messages</button>
+  </div>
+
+  <!-- TAB 1: OVERVIEW -->
+  <div id="overview" class="panel active">
+    <div class="action-box">
+      <div class="action-header">Your Next Moves</div>
+      <div class="action-item"><div class="action-num">1</div><div class="action-text"><strong>Connect at gap companies.</strong> You have 99 connections at Accenture but 0 at 433 companies you applied to. Go to the Gaps tab, pick 5 companies, and send 5 connection requests per day.</div></div>
+      <div class="action-item"><div class="action-num">2</div><div class="action-text"><strong>Diversify your function mix.</strong> 926 connections are uncategorized "Other." Search LinkedIn for Product Managers and Data Scientists at your target companies to build domain density.</div></div>
+      <div class="action-item"><div class="action-num">3</div><div class="action-text"><strong>Ride your growth momentum.</strong> Sep&ndash;Oct 2025 was your peak (159 + 168 new connections). Replicate whatever outreach strategy you used during that window.</div></div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <h3>Connection Growth (Last 12 Months)</h3>
+        <div class="chart-container"><canvas id="growthChart"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>Network by Function</h3>
+        <div class="chart-container"><canvas id="functionChart"></canvas></div>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <h3>Top 25 Companies</h3>
+        <div class="chart-container tall"><canvas id="companiesChart"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>Top 25 Titles</h3>
+        <div class="tbl-wrap" style="max-height:460px">
+          <table id="titlesTable">
+            <thead><tr><th>#</th><th>Title</th><th>Count</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Seniority Breakdown</h3>
+      <div class="chart-container" style="height:200px"><canvas id="seniorityChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- TAB 2: INFLUENCE -->
+  <div id="influence" class="panel">
+    <div class="action-box">
+      <div class="action-header">Your Next Moves</div>
+      <div class="action-item"><div class="action-num">1</div><div class="action-text"><strong>Email your top 10.</strong> You have 75 contacts with emails. Open Gmail, draft a short check-in to the most relevant ones (e.g., Logan Sloan at Oracle, Mayra Sharma at Kaufman Hall). Subject line: "Quick question about [their company]."</div></div>
+      <div class="action-item"><div class="action-num">2</div><div class="action-text"><strong>Engage 3 high-leverage contacts this week.</strong> Pick 3 from the top 50 list below. Comment on their most recent LinkedIn post or send a DM referencing something specific they shared.</div></div>
+      <div class="action-item"><div class="action-num">3</div><div class="action-text"><strong>Export this list.</strong> Copy the top 50 into a Google Sheet. Add a "Last Contacted" and "Response" column to track your outreach cadence week-over-week.</div></div>
+    </div>
+    <div class="card">
+      <h3>Top 50 Highest-Leverage Contacts</h3>
+      <input class="search-box" id="influenceSearch" placeholder="Search by name, company, or title..." oninput="filterTable('influenceTable','influenceSearch')">
+      <div class="tbl-wrap">
+        <table id="influenceTable">
+          <thead><tr><th>#</th><th>Name</th><th>Company</th><th>Position</th><th>Level</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card" style="margin-top:20px">
+      <h3>Connections with Email Addresses (75)</h3>
+      <input class="search-box" id="emailSearch" placeholder="Search contacts with emails..." oninput="filterTable('emailTable','emailSearch')">
+      <div class="tbl-wrap">
+        <table id="emailTable">
+          <thead><tr><th>Name</th><th>Company</th><th>Position</th><th>Email</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 3: COMPANY INTEL -->
+  <div id="companies" class="panel">
+    <div class="action-box">
+      <div class="action-header">Your Next Moves</div>
+      <div class="action-item"><div class="action-num">1</div><div class="action-text"><strong>Message your insider at each applied company.</strong> You applied to 44 companies where you already have connections. For each, send a DM: "Hey [Name], I recently applied to [Company] for [Role]. Would love to hear about your experience there."</div></div>
+      <div class="action-item"><div class="action-num">2</div><div class="action-text"><strong>Prioritize companies with senior contacts.</strong> Filter below for Director+ contacts at applied companies &mdash; they can refer you directly to hiring managers.</div></div>
+      <div class="action-item"><div class="action-num">3</div><div class="action-text"><strong>Activate saved-job connections.</strong> You have connections at Amazon (55), Microsoft (39), Google (38). These are warm referral paths. Message 2 people per company this week.</div></div>
+    </div>
+    <div class="card">
+      <h3>Applied AND Have Connections (44 of 477 companies)</h3>
+      <input class="search-box" id="appliedSearch" placeholder="Search applied companies..." oninput="filterTable('appliedTable','appliedSearch')">
+      <div class="tbl-wrap">
+        <table id="appliedTable">
+          <thead><tr><th>Company</th><th>Your Connections There</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card" style="margin-top:20px">
+      <h3>Saved Jobs AND Have Connections</h3>
+      <input class="search-box" id="savedSearch" placeholder="Search saved-job companies..." oninput="filterTable('savedTable','savedSearch')">
+      <div class="tbl-wrap" style="max-height:600px">
+        <table id="savedTable">
+          <thead><tr><th>Company</th><th>Your Connections There</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 4: OUTREACH -->
+  <div id="outreach" class="panel">
+    <div class="action-box">
+      <div class="action-header">Your Next Moves</div>
+      <div class="action-item"><div class="action-num">1</div><div class="action-text"><strong>Message 5 cold/high-seniority contacts per day.</strong> 1,159 senior contacts have never heard from you. Use this template: "Hi [Name], I've been following [Company]'s work in [area]. I'm exploring PM roles and would love to hear about your experience."</div></div>
+      <div class="action-item"><div class="action-num">2</div><div class="action-text"><strong>Re-engage your warm list.</strong> 427 people you've talked to before. Anyone you haven't messaged in 6+ months gets a "Hey, hope you're doing well &mdash; here's what I've been up to" note.</div></div>
+      <div class="action-item"><div class="action-num">3</div><div class="action-text"><strong>Convert active conversations to asks.</strong> You have 50 active contacts. These are your warmest leads. If any are at target companies, ask directly for a referral or intro this week.</div></div>
+    </div>
+    <div class="grid-3">
+      <div class="card" style="text-align:center">
+        <h3>Active</h3>
+        <div style="font-size:48px;font-weight:700;color:var(--accent2);font-family:var(--mono)">50</div>
+        <div style="color:var(--text2);font-size:12px;margin-top:4px">Messaged last 90 days</div>
+      </div>
+      <div class="card" style="text-align:center">
+        <h3>Warm</h3>
+        <div style="font-size:48px;font-weight:700;color:var(--mid);font-family:var(--mono)">427</div>
+        <div style="color:var(--text2);font-size:12px;margin-top:4px">Messaged before</div>
+      </div>
+      <div class="card" style="text-align:center">
+        <h3>Cold</h3>
+        <div style="font-size:48px;font-weight:700;color:var(--text2);font-family:var(--mono)">3,215</div>
+        <div style="color:var(--text2);font-size:12px;margin-top:4px">Never messaged</div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Relationship Distribution</h3>
+      <div class="chart-container" style="height:200px"><canvas id="outreachChart"></canvas></div>
+    </div>
+    <div class="card" style="margin-top:20px">
+      <h3>Priority Outreach — High Seniority, Never Messaged (1,159 contacts)</h3>
+      <input class="search-box" id="prioritySearch" placeholder="Search priority outreach list..." oninput="filterTable('priorityTable','prioritySearch')">
+      <div class="tbl-wrap" style="max-height:500px">
+        <table id="priorityTable">
+          <thead><tr><th>#</th><th>Name</th><th>Company</th><th>Position</th><th>Level</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 5: GAPS -->
+  <div id="gaps" class="panel">
+    <div class="action-box">
+      <div class="action-header">Your Next Moves</div>
+      <div class="action-item"><div class="action-num">1</div><div class="action-text"><strong>Pick 5 gap companies and connect with 3 people at each.</strong> Search LinkedIn for "[Company] Product Manager" and send personalized connection requests. Do this daily until you've covered your top 25.</div></div>
+      <div class="action-item"><div class="action-num">2</div><div class="action-text"><strong>Target saved-job gaps first.</strong> Airbnb, Notion, Shopify, Discord, Duolingo, Pinterest &mdash; you saved jobs there but know zero people. Fix this before applying.</div></div>
+      <div class="action-item"><div class="action-num">3</div><div class="action-text"><strong>Use alumni networks.</strong> Search "UT Austin [gap company]" on LinkedIn to find shared-school connections. Alumni respond at 3&ndash;5x the rate of cold outreach.</div></div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <h3>Applied but NO Connections (433 companies)</h3>
+        <input class="search-box" id="appGapSearch" placeholder="Search companies..." oninput="filterGaps('appGaps','appGapSearch')">
+        <div id="appGaps" class="tbl-wrap" style="max-height:500px"></div>
+      </div>
+      <div class="card">
+        <h3>Saved Jobs but NO Connections</h3>
+        <input class="search-box" id="savedGapSearch" placeholder="Search companies..." oninput="filterGaps('savedGaps','savedGapSearch')">
+        <div id="savedGaps" class="tbl-wrap" style="max-height:500px"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Gap Severity</h3>
+      <div class="chart-container" style="height:200px"><canvas id="gapChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- TAB 6: REFERRALS -->
+  <div id="referrals" class="panel">
+    <div class="action-box">
+      <div class="action-header">Your Next Moves</div>
+      <div class="action-item"><div class="action-num">1</div><div class="action-text"><strong>Send referral requests this week.</strong> For your top 5 target companies, message your connection: "Hey [Name], I'm applying to [Role] at [Company]. Would you be open to submitting an internal referral? Happy to send my resume."</div></div>
+      <div class="action-item"><div class="action-num">2</div><div class="action-text"><strong>Prioritize companies with 3+ connections.</strong> Multiple insiders = multiple shots at a referral. Amazon, Microsoft, Google, Meta, Capital One are your strongest paths.</div></div>
+      <div class="action-item"><div class="action-num">3</div><div class="action-text"><strong>Ask for hiring manager intros.</strong> Search the table below for anyone with "Director" or "Manager" in their title at a target company. They can fast-track your application internally.</div></div>
+    </div>
+    <div class="card">
+      <h3>Direct Connections at Target Companies</h3>
+      <input class="search-box" id="referralSearch" placeholder="Search target companies..." oninput="filterTable('referralTable','referralSearch')">
+      <div class="tbl-wrap" style="max-height:700px">
+        <table id="referralTable">
+          <thead><tr><th>Company</th><th>Connections</th><th>People</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 7: MESSAGES -->
+  <div id="messages" class="panel">
+    <div class="action-box">
+      <div class="action-header">Your Next Moves</div>
+      <div class="action-item"><div class="action-num">1</div><div class="action-text"><strong>Reply to Sam Adams (recruiter).</strong> He messaged you March 23 about your profile. If you haven't responded, do it today &mdash; recruiters move fast.</div></div>
+      <div class="action-item"><div class="action-num">2</div><div class="action-text"><strong>Follow up with Yael E.</strong> The Founder's Associate position was filled, but reply thanking them and ask to stay in touch for future roles. Keep the door open.</div></div>
+      <div class="action-item"><div class="action-num">3</div><div class="action-text"><strong>Respond to Aayushi Roy.</strong> She's reached out multiple times as a recruiter interested in your profile. Send your resume if you haven't already.</div></div>
+      <div class="action-item"><div class="action-num">4</div><div class="action-text"><strong>Re-engage Dickie Bush & Nicolas Cole.</strong> Your most active recent conversations are with content creators. Leverage these relationships for visibility and warm intros to their networks.</div></div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <h3>Most Active Conversations (Top 30)</h3>
+        <div class="chart-container tall"><canvas id="msgChart"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>Recently Active (Last 30 Days)</h3>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Person</th><th>Last Message</th><th>Total</th></tr></thead>
+            <tbody id="recentMsgBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:20px">
+      <h3>Job-Related Conversations</h3>
+      <input class="search-box" id="jobMsgSearch" placeholder="Search by person or keyword..." oninput="filterTable('jobMsgTable','jobMsgSearch')">
+      <div class="tbl-wrap" style="max-height:500px">
+        <table id="jobMsgTable">
+          <thead><tr><th>Person</th><th>Date</th><th>Keywords</th><th>Snippet</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// === TAB SWITCHING ===
+function showTab(id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// === SEARCH FILTER ===
+function filterTable(tableId, inputId) {
+  const q = document.getElementById(inputId).value.toLowerCase();
+  const rows = document.getElementById(tableId).querySelectorAll('tbody tr');
+  rows.forEach(r => {
+    r.style.display = r.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
+function filterGaps(containerId, inputId) {
+  const q = document.getElementById(inputId).value.toLowerCase();
+  const items = document.getElementById(containerId).querySelectorAll('.gap-item');
+  items.forEach(i => {
+    i.style.display = i.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
+
+// === DATA ===
+const growthData = {
+  labels: ['2025-03','2025-04','2025-05','2025-06','2025-07','2025-08','2025-09','2025-10','2025-11','2025-12','2026-01','2026-02','2026-03'],
+  values: [58,21,50,96,75,115,159,168,77,136,76,39,46]
+};
+
+const functionData = [
+  {l:'Data & Analytics',v:639},{l:'Leadership',v:495},{l:'Engineering',v:480},
+  {l:'Design & UX',v:316},{l:'Product',v:263},{l:'Consulting',v:155},
+  {l:'Marketing',v:126},{l:'Sales & BD',v:126},{l:'Recruiting & HR',v:43},
+  {l:'Finance',v:43},{l:'Other',v:926}
+];
+
+const topCompanies = [
+  ['Accenture',99],['Amazon',55],['Microsoft',39],['Dell Technologies',39],
+  ['Google',38],['Deloitte',35],['Meta',33],['Capital One',31],['PwC',25],
+  ['AWS',22],['EY',22],['IBM',20],['JPMorganChase',20],['Extern',17],
+  ['UT Austin',17],['Oracle',15],['Salesforce',15],['Freelance',14],
+  ['Apple',14],['JPMorgan Chase & Co.',11],['Self-employed',10],
+  ['Expedia Group',10],['Chevron',10],['CVS Health',10],['General Motors',10]
+];
+
+const topTitles = [
+  ['Founder',73],['Software Engineer',61],['Data Scientist',47],['Product Manager',32],
+  ['Consultant',30],['Senior Data Scientist',29],['Co-Founder',27],['Associate',23],
+  ['Data Analyst',21],['Data Engineer',19],['Senior Software Engineer',18],
+  ['Managing Director',16],['Senior Consultant',15],['Senior Recruiter',14],
+  ['Business Analyst',13],['Chief Executive Officer',13],['Project Manager',13],
+  ['Associate Product Manager',12],['Account Executive',12],['Senior Product Manager',12],
+  ['Senior Associate',12],['Graduate Research Assistant',12],['Product Designer',12],
+  ['UX Designer',11],['Founder & CEO',11]
+];
+
+const top50 = [
+  ['Nicolas Cole 🚢👻','Premium Ghostwriting Academy','Co-Founder','high'],
+  ['Candice Gasperini','Pioneers of change','Founder','high'],
+  ['Cate Wright','Monks','Director, Creative Strategy','high'],
+  ['Joanna Wallace (Sloame)','CreativeRx Consulting','Founder','high'],
+  ['Tiffany Dang','PortalAI','Head of People & Talent','high'],
+  ['Snigdha Nair','PROminence Training','Founder','high'],
+  ['Farnaz Hassani','AURIA','Founder','high'],
+  ['Tanvi Pareddy','Triguna America','Co-Founder & Managing Director','high'],
+  ['Vinita Gupta','Ayedu Technologies','Founder/CEO','high'],
+  ['Nitin Singla','Zywave','Managing Director India','high'],
+  ['Carly Valancy','Momentum Growth','Co-Founder','high'],
+  ['Nicole Dassau, MS, MBA','Onboard Partners','AVP Marketing','high'],
+  ['Matthias Frank','Matthias Frank Consulting','Founder | Notion Consultant','high'],
+  ['Dave de Céspedes','Workcraft Labs','Founder & Lead Consultant','high'],
+  ['Pragati Shaw','Würth Group','AI Product Owner','high'],
+  ['Alex Dobrenko','Code For Creatives','Founder','high'],
+  ['Sam Wright','Huntr','Head of Career Strategy','high'],
+  ['Katherine Nguyen','USC APASA','Co Executive Director','high'],
+  ['Jedrzej Tabaczynski','Vons Consulting','Founder & Engineering Consultant','high'],
+  ['Tara Reilly','Nike','Retail District Director','high'],
+  ['David Argudin','Bayside Printing','Marketing Director & Sales','high'],
+  ['Ian Harmon','Expose Profits','Director, Google Ads','high'],
+  ['David A. Marquez','Sysco','Sr. Product Owner - BI','high'],
+  ['Serhii Panchyshyn','AnimaNova','Founder','high'],
+  ['Jia Chong','Success Academy','Director | Campus Recruitment','high'],
+  ['Melissa Gray','York Space Systems','Director Talent Acquisition','high'],
+  ['Thomas Ma','Sapphire Studios','Managing Director','high'],
+  ['Rychelle Wilks','Creator Alchemy','COO','high'],
+  ['Pietro Montaldo','NForce AI','Co-Founder','high'],
+  ['James Moran','LinkedIntros','Founder','high'],
+  ['James Dickerson','Boringmarketing.com','Co-Founder','high'],
+  ['Beth Deaton','Truliant FCU','L&D Business Partner','high'],
+  ['Anna Tankel','Freelance','Fractional B2B Head of Growth','high'],
+  ['Abhinav Mugunda','Stealth Startup','Cofounder','high'],
+  ['Jason Lawley','Strategy&','Director | Enterprise Strategy','high'],
+  ['Peter Opoku Mensah','Google','Strategic Partnerships Assoc','high'],
+  ['Cynthia Saives','Oracle','Principal Talent Advisor','high'],
+  ['Darean R.','Sensori','Co-Founder and COO','high'],
+  ['Vinh Le','Citi','VP Model/Analysis Officer','high'],
+  ['Suchitra Kini','Simon Vision Consulting','Managing Director','high'],
+  ['Galaan Abdissa','Microsoft','Product Marketing Manager II','high'],
+  ['Karan Jerath','Squared Circles','Dir Innovation & Product Dev','high'],
+  ['Kevin Bultongez','Adora AI','Co-Founder','high'],
+  ['Carolina Posma','Postiv AI','Founder','high'],
+  ['Bold-Erdene Battur','Zogsoltgui','Co-Founder','high'],
+  ['Adam Kermally','@Rockets_Insider','Co-Founder','high'],
+  ['Cortney Spruill','Audubon Companies','Marketing & Events Coord','high'],
+  ['Maliq Hairston','fluent360','Junior Art Director','high'],
+  ['Avirup Bhaduri','Katy ISD','On-Site Coordinator','high'],
+  ['Christopher Peete','Caplugs','Quality Inspector','high'],
+];
+
+const emailContacts = [
+  ['James Moran','LinkedIntros','Founder','jamesemoraniv@gmail.com'],
+  ['Andres F Duque','JPMorgan Chase & Co.','VP - Product Manager','duque.andres@live.com'],
+  ['Daniel Moreno','General Assembly','Instructor Associate','moreno.amandod@gmail.com'],
+  ['Samantha Benitez','edX','UX/UI Instructor','benitez.same@gmail.com'],
+  ['Toby Thomas-Smith','Kiki London','CEO & Founder','toby@easyrent.nz'],
+  ['Dave Sheets','IndieAuthorPOD.com','President','dave@believersbookservices.com'],
+  ['Paul Brisson','Arvist','COO','brissonpaul@gmail.com'],
+  ['Rajeev Jha','Sapreen Consulting','Managing Partner','rajeev.jha@hotmail.com'],
+  ['Bing Mei','RIA Advisors','CTO','meibc222@gmail.com'],
+  ['Phillip Tran','BANGERS!','Founder & CEO','phillip.tran@alumni.stanford.edu'],
+  ['Rasheed Rabata','Capella Solutions','Founder','rasheed@capella.io'],
+  ['Mayra Sharma','Kaufman Hall','VP Strategy & Business','mayra.sharma@utexas.edu'],
+  ['Logan Sloan','Oracle','AI Principal Recruiter','LOGAN.SLOAN@ORACLE.COM'],
+  ['Rydham Goyal','Wells Fargo','AVP','goyalrydham@gmail.com'],
+  ['Trevor Bedard','Reynolds and Reynolds','Product Manager','trevor.bedard.pm@gmail.com'],
+  ['Mark Holtje','Accenture','Management Consultant','markholtje@gmail.com'],
+  ['Jolene Wu, PMP','Meta','Privacy Program Manager','jolene.wu@outlook.com'],
+  ['Kate Sherwood','GSD&M','Data Analyst','katesherwood2002@gmail.com'],
+  ['Hai Lan','Tesla','Sr Data Analyst','lawrencelan97@utexas.edu'],
+  ['Avery Smith','Data Career Jumpstart','Data Scientist','averyjs@gmail.com'],
+];
+
+const appliedWithConn = [
+  ['Accenture','Jignesh Sandesara (Assoc Dir), Eric Cadena (AI/ML Lead), Alex Livingston (Recruiter) +96 more'],
+  ['AMD','Sushanth Ravichandran, Marwan Ismail, Smriti Rai +5 more'],
+  ['Adobe','Evan Hickam (Talent Partner), Pemberai Mafi, Navin Watumull'],
+  ['CVS Health','Amber Clark (Sr Data Scientist), Huy Bui, Akshay Navaneetha +7 more'],
+  ['DoorDash','Ethan Markert (Sr Mgr Finance), Lucy Hwang (Data Scientist), Sriram Natarajan'],
+  ['Gartner','Shwetha Sridhar (BD Mgr), Jeffrey Joseph, Sivasankaran Sivaprasad +3 more'],
+  ['LinkedIn','Arhian Albis Ramos, Sitong Li (Sr SWE)'],
+  ['MongoDB','Ryan Maestre (Recruiter), Elizabeth Kidney, David Radzinsky +3 more'],
+  ['Slalom','Hamza Ghani (Sr AI Scientist), Anushka Kulshreshtha, Chris Rajan'],
+  ['TikTok','Samad Sawani, Julie Tran, Steve Lam, Rola Aziz +4 more'],
+  ['Umbrage','Manny Guerrero (Dir PM), Ronak Patel (Co-Founder), Roger Sun (VP Product) +4 more'],
+];
+
+const savedWithConn = [
+  ['Amazon','55 connections including Santoshni Birlangi, Hilda David +50 more'],
+  ['Microsoft','39 connections including Lan Pham (PM), Galaan Abdissa +34 more'],
+  ['Google','38 connections including Bryan Guthrie (Recruiter), Lujayn Megally +33 more'],
+  ['Meta','33 connections including Hunter Metz, Doreen Lubag +28 more'],
+  ['Capital One','31 connections including Yashaswi Singh, Nicole McKenna +26 more'],
+  ['Dell Technologies','39 connections including Emily Mathson, Ibrahim Madni +34 more'],
+  ['Deloitte','35 connections including Dmitry Tereshenko, Shrinkhala Rai +30 more'],
+  ['PwC','25 connections including George Korizis (Partner), Ryan Rake +20 more'],
+  ['EY','22 connections including Peter Flaming, Ammar Shaikh +17 more'],
+  ['IBM','20 connections including Jason Kim, Kyle Skyllingstad +15 more'],
+  ['JPMorganChase','20 connections including Vidhi Popley, Abdulmalik Garba +15 more'],
+  ['Apple','14 connections including Wendy Hsu, Paola Bueno +9 more'],
+  ['Salesforce','15 connections including Shvetan Katta, Anvesh Mahendravada +10 more'],
+  ['Oracle','15 connections including Cynthia Saives, Abha Misaqi +10 more'],
+  ['NVIDIA','9 connections including Jiajing Chen, Ebot Ndip-Agbor +4 more'],
+  ['Goldman Sachs','8 connections including Selorm Blagogee, Nick Kasper +3 more'],
+  ['Expedia Group','10 connections including Satwik Ale, Anna Hyclak +5 more'],
+  ['Walmart','8 connections including Shreedhi Paul, Irena Palamani +3 more'],
+  ['Stripe','4 connections including Max Bloom, Jorge Castaneda, Catherine Miao, Jing Fang'],
+  ['Uber','6 connections including Jeremy Gaines (Recruiter), Juan De Amezaga +1 more'],
+  ['Intuit','5 connections including Ivelin Angelov, Dian Lee, Isaac Obamehinti'],
+  ['Spotify','2 connections — Manuel Mai, Srijeeta Biswas'],
+  ['Coinbase','2 connections — William Dawoodi (Dir PM), Lindsay Marzett'],
+  ['Dropbox','3 connections — James Robinson, Liza Levin, Sami Dikmessalim'],
+  ['Atlassian','5 connections including Jenamarie Boots, Vish Agashe (SVP Data)'],
+  ['PepsiCo','5 connections including Courtney Myers, Vranda Vijay (Sr PM)'],
+  ['Figma','1 connection — Anthony Cummins (AE)'],
+  ['Parabola','5 connections including Paul Malloy (Chief of Staff)'],
+];
+
+const appGapCompanies = ['3545 Consulting-Global','355Life','99 Yards','99ads','AARATECH','ALW Career Connections','ATC','Accolite','Aceolution','ActiveCampaign','AdSpectra','Adaptive Security','Addison Group','Aditi Consulting','Advanced Recruiting Partners','AdvancingX','Advision Development','Ahava Services','Airswift','Akkodis','Akraya Inc.','All-in-One Academics','Allied Consultants Inc.','Allied Universal','Alphanumeric Systems','Altimetrik','American Board of Internal Medicine','American Unit Inc','Andie','Ankor','Apartments.com','Apex Systems','Apt','Aquent','Aquent Talent','Arch Staffing','Aretiforce','Aretum','Arrow Search Partners','Ascendion','Athomtech Inc','Atlas','Audio Bee','Avance Consulting','Axiom Global Technologies','BJSS','BairesDev','Bambee','BayOne Solutions','BeaconFire','Beam Benefits','BeBetter Benefits','Beyond Finance','Birlasoft','BitSight','Black & Veatch','Blackpoint Cyber','Bloomberg','Blue Coding','Blue Origin','Bob\'s Discount Furniture','Boldly','Brainlabs','BrainStorm','Built In','Business Wire','CDK Global','CGS International','Calvary Healthcare','Candidly','Center','Channel Factory','Circle','Cisco Meraki','ClearPoint Strategy','Clearent by Xplor','Clutch','CoinFund','Collective Health','Comcast','Community Brands','CompanyCam','Conduent','Constellation Brands','Converge Technology Solutions','Corebridge Financial','Credo AI','Crew','CrowdStrike','Culver Careers','Cybereason','DISYS','DaVita','DataVisor','DoorDash','Dropps','EDB','Elementus','Embark Veterinary'];
+
+const savedGapCompanies = ['Airbnb','Automattic','Block','Bumble','Canva','Chewy','Chime','Circle','Compass','ConsenSys','Coursera','Crunchbase','DataRobot','Discord','DraftKings','Duolingo','Electronic Arts','Etsy','Figma','Glassdoor','Grammarly','HubSpot','Indeed','Instacart','Intercom','Kickstarter','Klarna','Lemonade','Lyft','Mailchimp','Mastercard','Monday.com','Notion','Oscar Health','Palantir','Pinterest','Plaid','Robinhood','Roku','Shopify','Shutterstock','Snap','SoundCloud','Square','Squarespace','Strava','Tableau','The Athletic','The Knot','Twitch','Twilio','Vimeo','Wayfair','WeWork','Zendesk','Zillow','Zoom'];
+
+const recentConvos = [
+  ['Dickie Bush 🚢','2026-03-25',31],['Nicolas Cole 🚢👻','2026-03-24',4],
+  ['Daniel Bustamante 🥷🏻','2026-03-23',42],['Sam Adams','2026-03-23',1],
+  ['Sam Wright','2026-03-21',2],['Naomi Peh Haeger','2026-03-19',1],
+  ['Janae LeVander','2026-03-17',2],['Gethin Roberts','2026-03-17',2],
+  ['Deepali Chauhan','2026-03-15',34],['Yael E.','2026-03-12',1],
+  ['Logan Gott','2026-03-09',4],['Natasa Vukasinovic','2026-03-07',3],
+  ['Matthew C Brown','2026-03-04',14],['jessie van breugel','2026-02-27',19],
+  ['Matthias Frank','2026-02-26',1],['Pietro Montaldo','2026-02-23',4],
+];
+
+const topMsgPartners = [
+  ['Ashwin Siddarth',100],['Hannah Li',90],['Nitin Sriram',62],
+  ['Balvinder Singh Uppal',58],['Victor Nguyen',58],['Daniel Bustamante 🥷🏻',42],
+  ['Manas V',42],['Krish Raghuram',41],['Joseph Chin',40],['Alishah Vidhani',37],
+  ['Amulya Saridey',35],['Deepali Chauhan',34],['LinkedIn Member',34],
+  ['Annu Thukral',32],['Dickie Bush 🚢',31],['Saipranathi Gunda',30],
+  ['Ahmed Hashmi',29],['Palak Joshi',28],['Alisha Sood',27],['Sneha Santani',26],
+];
+
+const jobMessages = [
+  ['Nicolas Cole 🚢👻','2026-03-23','opportunity','AI is here, now what? Getting DMs from writers stressing about AI...'],
+  ['Sam Adams','2026-03-23','recruiter, role','Reaching out because I loved your profile, specifically your experience...'],
+  ['Sam Wright','2026-03-21','interview, resume','The interview guarantee pilot is $40/mo. If you complete 20 tasks...'],
+  ['Yael E.','2026-03-12','position','Thanks again for your interest. Wanted to let you know the Founder\'s Associate...'],
+  ['Aayushi Roy','2026-02-20','resume','Please send me your resume'],
+  ['Rahul Jindal','2026-02-17','referral','Appreciate the connection! Seen your content recently and wanted to run this by you...'],
+  ['Aayushi Roy','2026-02-12','position, recruiter, role','Noticed your impressive work as a TikTok Content and Brand Strategist...'],
+  ['Aayushi Roy','2026-02-10','recruiter, role','Came across your profile, impressed by your blend of product & analytics...'],
+  ['Divya Viswanathan','2026-02-05','opportunity, resume','Came across your profile, wanted to connect regarding a Marketing SME opportunity...'],
+  ['Gaylyn Anter','2026-01-22','opportunity, application, compensation','Came across your profile, consulting opportunity at a Fortune 15 company...'],
+];
+
+const priorityOutreach = [
+  ['Candice Gasperini','Pioneers of change','Founder','high'],
+  ['Cate Wright','Monks','Director, Creative Strategy','high'],
+  ['Joanna Wallace (Sloame)','CreativeRx Consulting','Founder','high'],
+  ['Tiffany Dang','PortalAI','Head of People & Talent','high'],
+  ['Snigdha Nair','PROminence Training','Founder','high'],
+  ['Farnaz Hassani','AURIA','Founder','high'],
+  ['Tanvi Pareddy','Triguna America','Co-Founder & MD','high'],
+  ['Vinita Gupta','Ayedu Technologies','Founder/CEO','high'],
+  ['Nitin Singla','Zywave','Managing Director India','high'],
+  ['Carly Valancy','Momentum Growth','Co-Founder','high'],
+  ['Nicole Dassau','Onboard Partners','AVP Marketing','high'],
+  ['Dave de Céspedes','Workcraft Labs','Founder & Lead Consultant','high'],
+  ['Pragati Shaw','Würth Group','AI Product Owner','high'],
+  ['Alex Dobrenko','Code For Creatives','Founder','high'],
+  ['Katherine Nguyen','USC APASA','Co Executive Director','high'],
+  ['Jedrzej Tabaczynski','Vons Consulting','Founder & Eng Consultant','high'],
+  ['Tara Reilly','Nike','Retail District Director','high'],
+  ['Serhii Panchyshyn','AnimaNova','Founder','high'],
+  ['Jia Chong','Success Academy','Director | Campus Recruitment','high'],
+  ['Melissa Gray','York Space Systems','Director Talent Acquisition','high'],
+  ['Thomas Ma','Sapphire Studios','Managing Director','high'],
+  ['Rychelle Wilks','Creator Alchemy','COO','high'],
+  ['James Moran','LinkedIntros','Founder','high'],
+  ['James Dickerson','Boringmarketing.com','Co-Founder','high'],
+  ['Anna Tankel','Freelance','Fractional B2B Head of Growth','high'],
+  ['Abhinav Mugunda','Stealth Startup','Cofounder','high'],
+  ['Jason Lawley','Strategy&','Director | Enterprise Strategy','high'],
+  ['Peter Opoku Mensah','Google','Strategic Partnerships','high'],
+  ['Cynthia Saives','Oracle','Principal Talent Advisor','high'],
+  ['Darean R.','Sensori','Co-Founder and COO','high'],
+  ['Vinh Le','Citi','VP Model/Analysis Officer','high'],
+  ['Galaan Abdissa','Microsoft','Product Marketing Mgr II','high'],
+  ['Karan Jerath','Squared Circles','Dir Innovation & Product','high'],
+  ['Kevin Bultongez','Adora AI','Co-Founder','high'],
+  ['Carolina Posma','Postiv AI','Founder','high'],
+  ['George Korizis','PwC','Partner - Front Office Strategy','high'],
+  ['William Dawoodi','Coinbase','Director of PM','high'],
+  ['Maura Ballantyne','Axon','SVP Global Services','high'],
+  ['Vish Agashe','Atlassian','SVP Data','high'],
+  ['Irena Palamani Xhurxhi','Walmart','Director People Science','high'],
+];
+
+// === RENDER CHARTS ===
+function createCharts() {
+  // Growth chart
+  new Chart(document.getElementById('growthChart'), {
+    type: 'bar',
+    data: {
+      labels: growthData.labels,
+      datasets: [{
+        data: growthData.values,
+        backgroundColor: growthData.values.map(v => v > 100 ? '#6c63ff' : 'rgba(108,99,255,0.4)'),
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#8888a0', font: { size: 10 } }, grid: { display: false } },
+        y: { ticks: { color: '#8888a0' }, grid: { color: 'rgba(42,42,62,0.5)' } }
+      }
+    }
+  });
+
+  // Function donut
+  new Chart(document.getElementById('functionChart'), {
+    type: 'doughnut',
+    data: {
+      labels: functionData.map(f => f.l),
+      datasets: [{
+        data: functionData.map(f => f.v),
+        backgroundColor: ['#6c63ff','#ff6b6b','#00d4aa','#ffa726','#42a5f5','#ab47bc','#26a69a','#ef5350','#78909c','#8d6e63','#546e7a'],
+        borderWidth: 0,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'right', labels: { color: '#e0e0ec', font: { size: 11 }, padding: 8, boxWidth: 12 } }
+      },
+      cutout: '55%',
+    }
+  });
+
+  // Top companies horizontal bar
+  new Chart(document.getElementById('companiesChart'), {
+    type: 'bar',
+    data: {
+      labels: topCompanies.map(c => c[0]),
+      datasets: [{
+        data: topCompanies.map(c => c[1]),
+        backgroundColor: 'rgba(108,99,255,0.6)',
+        borderRadius: 3,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#8888a0' }, grid: { color: 'rgba(42,42,62,0.5)' } },
+        y: { ticks: { color: '#e0e0ec', font: { size: 11 } }, grid: { display: false } }
+      }
+    }
+  });
+
+  // Seniority bar
+  new Chart(document.getElementById('seniorityChart'), {
+    type: 'bar',
+    data: {
+      labels: ['High (C-suite, VP, Founder)', 'Mid (Director, Manager)', 'Standard', 'Unknown'],
+      datasets: [{
+        data: [785, 635, 2192, 80],
+        backgroundColor: ['#ff6b6b', '#ffa726', '#66bb6a', '#546e7a'],
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#8888a0' }, grid: { color: 'rgba(42,42,62,0.5)' } },
+        y: { ticks: { color: '#e0e0ec', font: { size: 12 } }, grid: { display: false } }
+      }
+    }
+  });
+
+  // Outreach donut
+  new Chart(document.getElementById('outreachChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Active (90d)', 'Warm', 'Cold'],
+      datasets: [{
+        data: [50, 427, 3215],
+        backgroundColor: ['#00d4aa', '#ffa726', '#546e7a'],
+        borderWidth: 0,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'right', labels: { color: '#e0e0ec', font: { size: 13 } } } },
+      cutout: '60%',
+    }
+  });
+
+  // Gap chart
+  new Chart(document.getElementById('gapChart'), {
+    type: 'bar',
+    data: {
+      labels: ['Applied — Have Connections', 'Applied — NO Connections', 'Saved — Have Connections', 'Saved — NO Connections'],
+      datasets: [{
+        data: [44, 433, 148, 287],
+        backgroundColor: ['#66bb6a', '#ff6b6b', '#66bb6a', '#ff6b6b'],
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#e0e0ec', font: { size: 11 } }, grid: { display: false } },
+        y: { ticks: { color: '#8888a0' }, grid: { color: 'rgba(42,42,62,0.5)' } }
+      }
+    }
+  });
+
+  // Messages bar
+  new Chart(document.getElementById('msgChart'), {
+    type: 'bar',
+    data: {
+      labels: topMsgPartners.map(p => p[0]),
+      datasets: [{
+        data: topMsgPartners.map(p => p[1]),
+        backgroundColor: 'rgba(0,212,170,0.5)',
+        borderRadius: 3,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#8888a0' }, grid: { color: 'rgba(42,42,62,0.5)' } },
+        y: { ticks: { color: '#e0e0ec', font: { size: 11 } }, grid: { display: false } }
+      }
+    }
+  });
+}
+
+// === RENDER TABLES ===
+function renderTables() {
+  // Titles
+  const titlesBody = document.querySelector('#titlesTable tbody');
+  topTitles.forEach(([t, c], i) => {
+    titlesBody.innerHTML += `<tr><td>${i+1}</td><td>${t}</td><td class="count">${c}</td></tr>`;
+  });
+
+  // Top 50
+  const infBody = document.querySelector('#influenceTable tbody');
+  top50.forEach(([n,co,p,l], i) => {
+    infBody.innerHTML += `<tr><td>${i+1}</td><td>${n}</td><td>${co}</td><td>${p}</td><td><span class="badge ${l}">${l}</span></td></tr>`;
+  });
+
+  // Emails
+  const emBody = document.querySelector('#emailTable tbody');
+  emailContacts.forEach(([n,co,p,e]) => {
+    emBody.innerHTML += `<tr><td>${n}</td><td>${co}</td><td>${p}</td><td style="font-family:var(--mono);font-size:12px">${e}</td></tr>`;
+  });
+
+  // Applied with connections
+  const appBody = document.querySelector('#appliedTable tbody');
+  appliedWithConn.forEach(([co, people]) => {
+    appBody.innerHTML += `<tr><td style="font-weight:600">${co}</td><td style="font-size:12px">${people}</td></tr>`;
+  });
+
+  // Saved with connections
+  const savBody = document.querySelector('#savedTable tbody');
+  savedWithConn.forEach(([co, people]) => {
+    savBody.innerHTML += `<tr><td style="font-weight:600">${co}</td><td style="font-size:12px">${people}</td></tr>`;
+  });
+
+  // App gaps
+  const appGapsDiv = document.getElementById('appGaps');
+  appGapCompanies.forEach(c => {
+    appGapsDiv.innerHTML += `<div class="gap-item"><span class="company">${c}</span><span class="tag">NO CONNECTIONS</span></div>`;
+  });
+
+  // Saved gaps
+  const savedGapsDiv = document.getElementById('savedGaps');
+  savedGapCompanies.forEach(c => {
+    savedGapsDiv.innerHTML += `<div class="gap-item"><span class="company">${c}</span><span class="tag">NO CONNECTIONS</span></div>`;
+  });
+
+  // Referrals table (combine applied + saved with connections)
+  const refBody = document.querySelector('#referralTable tbody');
+  const allRefs = [...savedWithConn, ...appliedWithConn];
+  const seen = new Set();
+  allRefs.forEach(([co, people]) => {
+    if (seen.has(co)) return;
+    seen.add(co);
+    const match = people.match(/(\d+) connection/);
+    const count = match ? match[1] : people.split(',').length;
+    refBody.innerHTML += `<tr><td style="font-weight:600">${co}</td><td class="count">${count}</td><td style="font-size:12px">${people}</td></tr>`;
+  });
+
+  // Priority outreach
+  const prBody = document.querySelector('#priorityTable tbody');
+  priorityOutreach.forEach(([n,co,p,l], i) => {
+    prBody.innerHTML += `<tr><td>${i+1}</td><td>${n}</td><td>${co}</td><td>${p}</td><td><span class="badge ${l}">${l}</span></td></tr>`;
+  });
+
+  // Recent messages
+  const rmBody = document.getElementById('recentMsgBody');
+  recentConvos.forEach(([p, d, c]) => {
+    rmBody.innerHTML += `<tr><td>${p}</td><td style="font-family:var(--mono);font-size:12px">${d}</td><td class="count">${c}</td></tr>`;
+  });
+
+  // Job messages
+  const jmBody = document.querySelector('#jobMsgTable tbody');
+  jobMessages.forEach(([p, d, kw, s]) => {
+    jmBody.innerHTML += `<tr><td>${p}</td><td style="font-family:var(--mono);font-size:12px;white-space:nowrap">${d}</td><td><span class="badge warm">${kw}</span></td><td class="msg-snippet">${s}</td></tr>`;
+  });
+}
+
+// === INIT ===
+createCharts();
+renderTables();
+</script>
+</body>
+</html>

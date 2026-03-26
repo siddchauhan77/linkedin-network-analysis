@@ -1,0 +1,14 @@
+# Raw LinkedIn export data — contains PII, stays local only
+*.csv
+*.zip
+Articles/
+Jobs/
+Services Marketplace/
+Verifications/
+
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
