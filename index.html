@@ -412,6 +412,9 @@
     <button class="tab" onclick="showTab('referrals')">Referral Paths</button>
     <button class="tab" onclick="showTab('messages')">Messages</button>
     <button class="tab" onclick="showTab('ghostwriting')">Ghostwriting Prospects</button>
+    <button class="tab" onclick="showTab('content')">Content Activity</button>
+    <button class="tab" onclick="showTab('engagement')">Engagement Map</button>
+    <button class="tab" onclick="showTab('career')">Career Timeline</button>
   </div>
 
   <!-- TAB 1: OVERVIEW -->
@@ -685,6 +688,124 @@
         </table>
       </div>
       <div style="margin-top:12px;font-size:12px;color:var(--text2)" id="gwResultCount"></div>
+    </div>
+  </div>
+
+  <!-- TAB 9: CONTENT ACTIVITY -->
+  <div id="content" class="panel">
+    <div class="action-box">
+      <div class="action-header">Your Next Moves</div>
+      <div class="action-item"><div class="action-num">1</div><div class="action-text"><strong>Restart posting.</strong> You dropped from 26 posts in Oct 2024 to nearly zero since Dec 2025. Even 2-3 posts/week will compound your visibility.</div></div>
+      <div class="action-item"><div class="action-num">2</div><div class="action-text"><strong>Repurpose your best posts.</strong> Scroll the Recent Posts table below &mdash; find your highest-performing hooks and rewrite them with fresh angles.</div></div>
+      <div class="action-item"><div class="action-num">3</div><div class="action-text"><strong>Match posting to connection growth.</strong> Sep&ndash;Oct 2025 was your connection peak AND your posting peak. Correlation isn&rsquo;t coincidence.</div></div>
+    </div>
+    <div class="grid-3">
+      <div class="card" style="text-align:center">
+        <h3>Total Posts</h3>
+        <div style="font-size:48px;font-weight:700;color:var(--accent);font-family:var(--mono)">665</div>
+        <div style="color:var(--text2);font-size:12px;margin-top:4px">LinkedIn shares &amp; posts</div>
+      </div>
+      <div class="card" style="text-align:center">
+        <h3>With Commentary</h3>
+        <div style="font-size:48px;font-weight:700;color:var(--accent2);font-family:var(--mono)">548</div>
+        <div style="color:var(--text2);font-size:12px;margin-top:4px">Original text posts</div>
+      </div>
+      <div class="card" style="text-align:center">
+        <h3>Peak Month</h3>
+        <div style="font-size:48px;font-weight:700;color:var(--mid);font-family:var(--mono)">26</div>
+        <div style="color:var(--text2);font-size:12px;margin-top:4px">Oct 2024</div>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <h3>Post Frequency (Last 18 Months)</h3>
+        <div class="chart-container"><canvas id="postFreqChart"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>Posts vs Connection Growth</h3>
+        <div class="chart-container"><canvas id="postGrowthChart"></canvas></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Recent Posts with Commentary (Last 20)</h3>
+      <div class="tbl-wrap" style="max-height:500px">
+        <table id="recentPostsTable">
+          <thead><tr><th>Date</th><th>Post</th><th>Link</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 10: ENGAGEMENT MAP -->
+  <div id="engagement" class="panel">
+    <div class="action-box">
+      <div class="action-header">Your Next Moves</div>
+      <div class="action-item"><div class="action-num">1</div><div class="action-text"><strong>Increase your reaction activity.</strong> You gave 1,677 reactions total but only 12 in the last 3 months. Engaging on others&rsquo; content = visibility + relationship building.</div></div>
+      <div class="action-item"><div class="action-num">2</div><div class="action-text"><strong>Target 10 reactions/day on prospects&rsquo; posts.</strong> Go to the Ghostwriting Prospects tab, find Leaks who post regularly, and react + comment on their content before DM&rsquo;ing.</div></div>
+      <div class="action-item"><div class="action-num">3</div><div class="action-text"><strong>Use more reaction types.</strong> 99.2% of your reactions are Likes. Using Celebrate, Insightful, or Love stands out more in notifications.</div></div>
+    </div>
+    <div class="grid-3">
+      <div class="card" style="text-align:center">
+        <h3>Total Reactions</h3>
+        <div style="font-size:48px;font-weight:700;color:var(--accent);font-family:var(--mono)">1,677</div>
+        <div style="color:var(--text2);font-size:12px;margin-top:4px">Reactions given</div>
+      </div>
+      <div class="card" style="text-align:center">
+        <h3>Peak Month</h3>
+        <div style="font-size:48px;font-weight:700;color:var(--mid);font-family:var(--mono)">113</div>
+        <div style="color:var(--text2);font-size:12px;margin-top:4px">Aug 2025</div>
+      </div>
+      <div class="card" style="text-align:center">
+        <h3>Last 90 Days</h3>
+        <div style="font-size:48px;font-weight:700;color:var(--high);font-family:var(--mono)">12</div>
+        <div style="color:var(--text2);font-size:12px;margin-top:4px">Engagement dropped off</div>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <h3>Reaction Frequency (Last 18 Months)</h3>
+        <div class="chart-container"><canvas id="reactionFreqChart"></canvas></div>
+      </div>
+      <div class="card">
+        <h3>Reaction Types</h3>
+        <div class="chart-container"><canvas id="reactionTypeChart"></canvas></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Engagement Activity: Posts + Reactions Combined</h3>
+      <div class="chart-container"><canvas id="engagementComboChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- TAB 11: CAREER TIMELINE -->
+  <div id="career" class="panel">
+    <div class="action-box">
+      <div class="action-header">Your Next Moves</div>
+      <div class="action-item"><div class="action-num">1</div><div class="action-text"><strong>Leverage your multi-domain experience.</strong> You span data science, content strategy, photography, AI product management, and UGC. This is rare &mdash; position yourself at the intersection.</div></div>
+      <div class="action-item"><div class="action-num">2</div><div class="action-text"><strong>Use Extern projects as portfolio pieces.</strong> News Corp AI PM, Wayfair AI Automation, TikTok Content Strategy &mdash; these are real company names you can reference in outreach.</div></div>
+      <div class="action-item"><div class="action-num">3</div><div class="action-text"><strong>Update your narrative.</strong> Your arc is: Data Science &rarr; Content/Brand &rarr; AI Product. Frame this as intentional convergence, not random jumps.</div></div>
+    </div>
+    <div class="card">
+      <h3>Career Timeline</h3>
+      <div id="timelineContainer" style="padding:20px 0"></div>
+    </div>
+    <div class="card" style="margin-top:20px">
+      <h3>Skills &amp; Experience Summary</h3>
+      <div class="grid-3">
+        <div style="padding:12px">
+          <div style="font-size:12px;color:var(--accent2);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;font-weight:600">Data &amp; AI</div>
+          <div style="font-size:13px;color:var(--text2);line-height:1.8">Accenture (2 yrs) &bull; Favor Delivery &bull; Texas A&amp;M Research &bull; Wayfair AI Automation &bull; News Corp AI PM</div>
+        </div>
+        <div style="padding:12px">
+          <div style="font-size:12px;color:var(--mid);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;font-weight:600">Content &amp; Brand</div>
+          <div style="font-size:13px;color:var(--text2);line-height:1.8">TikTok Strategy &bull; UGC Creator &bull; Entropy Studios &bull; Photography (5 yrs) &bull; Desi Dance Network &bull; PGA Member</div>
+        </div>
+        <div style="padding:12px">
+          <div style="font-size:12px;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;font-weight:600">Product &amp; Strategy</div>
+          <div style="font-size:13px;color:var(--text2);line-height:1.8">News Corp AI PM (Extern) &bull; Creative Strategy Bootcamp &bull; No Code x AI Bootcamp &bull; Ali Abdaal Alumni</div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -1139,6 +1260,53 @@ function toggleGwCompetitors(btn) {
   filterGhostwriting();
 }
 
+// === CONTENT & ENGAGEMENT DATA ===
+const postFreqLabels = ['2024-08','2024-09','2024-10','2024-11','2024-12','2025-01','2025-02','2025-03','2025-04','2025-05','2025-06','2025-07','2025-08','2025-09','2025-10','2025-11','2025-12','2026-01','2026-02','2026-03'];
+const postFreqValues = [12,15,26,14,1,1,16,12,10,6,18,17,8,10,1,4,1,0,0,1];
+const reactionFreqLabels = ['2024-10','2024-11','2024-12','2025-01','2025-02','2025-03','2025-04','2025-05','2025-06','2025-07','2025-08','2025-09','2025-10','2025-11','2025-12','2026-01','2026-02','2026-03'];
+const reactionFreqValues = [55,86,4,18,74,26,25,36,27,95,113,19,16,37,13,1,4,7];
+
+const recentPosts = [
+  ['2026-03-01','Interesting insights !!','https://www.linkedin.com/feed/update/urn%3Ali%3Ashare%3A7433910970172743680'],
+  ['2025-12-19','Rapid Learning is a skill anyone can master','https://www.linkedin.com/feed/update/urn%3Ali%3AugcPost%3A7407878556904726528'],
+  ['2025-11-21','This is going to be a good one.',''],
+  ['2025-11-06','Imagine one decision this week radically levels up your career and AI smarts.',''],
+  ['2025-11-05','Just completed my first AI agent project in n8n: a Moodboard Generator that transforms creative...',''],
+  ['2025-11-03','💯 challenge accepted #100school — 30 days to go from being just curious about AI to building...',''],
+  ['2025-10-01','I had 27 half-finished drafts sitting in Google Docs. Not one of them made it to publish.',''],
+  ['2025-09-19','You\\'re about to make a decision that will haunt you for months...',''],
+  ['2025-09-18','Google just turned your ad into a one-click shopping cart. Faster checkout = more conversions.',''],
+  ['2025-09-15','Degrees are optional. Mastering high-income skills is non-negotiable in 2025.',''],
+  ['2025-09-12','🚀 Game-changing: Anthropic\\'s Claude can now create and edit files directly on your computer...',''],
+  ['2025-09-12','Still waiting for motivation to appear? It prolly won\\'t. Your brain won\\'t give you motivation...',''],
+  ['2025-09-07','This is a great take. Tools like Make.com and Zapier are unlocking real leverage...',''],
+  ['2025-09-04','Most procrastination IS NOT laziness. It\\'s fear wearing the mask of productivity avoidance.',''],
+  ['2025-09-03','School lied about intelligence. But your brain might be wired for a very different kind of smart.',''],
+  ['2025-08-20','Nature and Notion finally collaborating',''],
+  ['2025-08-18','Did you check it out yet? Offline mode is here in Notion...',''],
+  ['2025-08-15','For anyone who\\'s ever stared at their job search tracker, feeling stuck...',''],
+  ['2025-07-29','There's a massive shift happening in brand marketing that most companies are sleeping on.',''],
+  ['2025-07-24','AI is not replacing you. But someone who uses AI better than you might.',''],
+];
+
+const careerTimeline = [
+  {title:'Creative Strategy Bootcamp',company:'Motion (Creative Analytics)',start:'Mar 2026',end:'Present',color:'#00d4aa',category:'product'},
+  {title:'AI Product Manager — News Corp',company:'Extern',start:'Feb 2026',end:'Present',color:'#6c63ff',category:'data'},
+  {title:'TikTok Content & Brand Strategy',company:'Extern',start:'Jan 2026',end:'Mar 2026',color:'#ffa726',category:'content'},
+  {title:'UGC Creator',company:'CreatorGrid',start:'Nov 2025',end:'Mar 2026',color:'#ffa726',category:'content'},
+  {title:'AI Automation — Wayfair',company:'Extern',start:'Oct 2025',end:'Jan 2026',color:'#6c63ff',category:'data'},
+  {title:'No Code x AI Bootcamp',company:'100 school',start:'Nov 2024',end:'Dec 2024',color:'#6c63ff',category:'data'},
+  {title:'PGA Member',company:'Premium Ghostwriting Academy',start:'2024',end:'Present',color:'#ffa726',category:'content'},
+  {title:'Production Associate',company:'Confidential',start:'Jan 2024',end:'Dec 2024',color:'#8888a0',category:'other'},
+  {title:'Owner',company:'Entropy Studios',start:'Mar 2022',end:'Present',color:'#ffa726',category:'content'},
+  {title:'Data & AI Consulting',company:'Accenture',start:'Sep 2021',end:'Nov 2023',color:'#6c63ff',category:'data'},
+  {title:'Marketing & Design Lead',company:'Desi Dance Network',start:'Jan 2023',end:'Aug 2023',color:'#ffa726',category:'content'},
+  {title:'Data Science Consultant',company:'Favor Delivery',start:'Dec 2020',end:'May 2021',color:'#6c63ff',category:'data'},
+  {title:'Founder',company:'Sidd Chauhan Photography',start:'Aug 2017',end:'Jul 2022',color:'#ffa726',category:'content'},
+  {title:'Research Assistant',company:'Texas A&M University',start:'Sep 2017',end:'Jan 2018',color:'#6c63ff',category:'data'},
+  {title:'Brand Ambassador',company:'Abercrombie & Fitch',start:'Jun 2017',end:'Aug 2017',color:'#ffa726',category:'content'},
+];
+
 // === RENDER CHARTS ===
 function createCharts() {
   // Growth chart
@@ -1374,6 +1542,13 @@ function renderTables() {
   });
   document.getElementById('gwEmailCount').textContent = emailCount;
   document.getElementById('gwResultCount').textContent = `Showing ${gwProspects.length} of ${gwProspects.length} prospects`;
+
+  // Recent posts table
+  const rpBody = document.querySelector('#recentPostsTable tbody');
+  recentPosts.forEach(([d, text, link]) => {
+    const linkCol = link ? `<a href="${link}" target="_blank" style="font-size:11px">View</a>` : '<span style="color:var(--text2);font-size:11px">—</span>';
+    rpBody.innerHTML += `<tr><td style="font-family:var(--mono);font-size:12px;white-space:nowrap">${d}</td><td style="font-size:13px">${text}</td><td>${linkCol}</td></tr>`;
+  });
 }
 
 // === INIT (deferred until auth) ===
