@@ -162,6 +162,30 @@
   .badge.active { background: rgba(0,212,170,0.15); color: var(--accent2); }
   .badge.warm { background: rgba(255,167,38,0.15); color: var(--mid); }
   .badge.cold { background: rgba(136,136,160,0.15); color: var(--text2); }
+  .badge.leak { background: rgba(255,107,107,0.18); color: #ff6b6b; }
+  .badge.faucet { background: rgba(66,165,245,0.18); color: #42a5f5; }
+  .badge.svc { background: rgba(108,99,255,0.12); color: #9e97ff; font-weight: 500; margin-right: 4px; }
+
+  .filter-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .filter-btn {
+    padding: 6px 14px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text2);
+    font-size: 12px;
+    cursor: pointer;
+    font-family: var(--font);
+    transition: all 0.15s;
+  }
+  .filter-btn:hover { border-color: var(--accent); color: var(--text); }
+  .filter-btn.on { background: rgba(108,99,255,0.15); border-color: var(--accent); color: var(--accent); }
 
   .search-box {
     width: 100%;
@@ -385,6 +409,7 @@
     <button class="tab" onclick="showTab('gaps')">Network Gaps</button>
     <button class="tab" onclick="showTab('referrals')">Referral Paths</button>
     <button class="tab" onclick="showTab('messages')">Messages</button>
+    <button class="tab" onclick="showTab('ghostwriting')">Ghostwriting Prospects</button>
   </div>
 
   <!-- TAB 1: OVERVIEW -->
@@ -608,6 +633,57 @@
       </div>
     </div>
   </div>
+
+  <!-- TAB 8: GHOSTWRITING PROSPECTS -->
+  <div id="ghostwriting" class="panel">
+    <div class="action-box">
+      <div class="action-header">Your Next Moves</div>
+      <div class="action-item"><div class="action-num">1</div><div class="action-text"><strong>DM 5 Leaks per day.</strong> These founders/CEOs should be writing but aren&rsquo;t. Message them: &ldquo;Hey [Name], I&rsquo;ve been following [Company]. Are you doing any LinkedIn/newsletter content? I help founders build thought leadership through ghostwriting.&rdquo;</div></div>
+      <div class="action-item"><div class="action-num">2</div><div class="action-text"><strong>Warm up 3 Faucets per week.</strong> Marketing directors, recruiters, and agency owners know dozens of founders who need ghostwriting. Ask: &ldquo;Who in your network should be posting more on LinkedIn but isn&rsquo;t?&rdquo;</div></div>
+      <div class="action-item"><div class="action-num">3</div><div class="action-text"><strong>Use service tags to personalize.</strong> Social &rarr; pitch LinkedIn ghostwriting. Email Course &rarr; pitch educational email funnel buildout. Newsletter &rarr; pitch Substack/newsletter ghostwriting. Multi-tagged prospects are highest value.</div></div>
+    </div>
+
+    <div class="grid-3">
+      <div class="card" style="text-align:center">
+        <h3>Leaks</h3>
+        <div style="font-size:48px;font-weight:700;color:#ff6b6b;font-family:var(--mono)">200</div>
+        <div style="color:var(--text2);font-size:12px;margin-top:4px">Need ghostwriting directly</div>
+      </div>
+      <div class="card" style="text-align:center">
+        <h3>Faucets</h3>
+        <div style="font-size:48px;font-weight:700;color:#42a5f5;font-family:var(--mono)">50</div>
+        <div style="color:var(--text2);font-size:12px;margin-top:4px">Know people who need it</div>
+      </div>
+      <div class="card" style="text-align:center">
+        <h3>Have Email</h3>
+        <div style="font-size:48px;font-weight:700;color:var(--accent2);font-family:var(--mono)" id="gwEmailCount">0</div>
+        <div style="color:var(--text2);font-size:12px;margin-top:4px">Can contact directly</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Ghostwriting Prospect Pipeline</h3>
+      <input class="search-box" id="gwSearch" placeholder="Search by name, company, title, or service..." oninput="filterGhostwriting()">
+      <div class="filter-row">
+        <button class="filter-btn on" data-filter="all" onclick="toggleGwFilter(this)">All</button>
+        <button class="filter-btn" data-filter="Leak" onclick="toggleGwFilter(this)">Leak Only</button>
+        <button class="filter-btn" data-filter="Faucet" onclick="toggleGwFilter(this)">Faucet Only</button>
+        <span style="color:var(--text2);font-size:11px;margin-left:8px">|</span>
+        <button class="filter-btn" data-filter="Social" onclick="toggleGwFilter(this)">Social</button>
+        <button class="filter-btn" data-filter="Email Course" onclick="toggleGwFilter(this)">Email Course</button>
+        <button class="filter-btn" data-filter="Newsletter" onclick="toggleGwFilter(this)">Newsletter</button>
+        <button class="filter-btn" data-filter="has-email" onclick="toggleGwFilter(this)">Has Email</button>
+      </div>
+      <div class="tbl-wrap" style="max-height:600px">
+        <table id="gwTable">
+          <thead><tr><th>#</th><th>Name</th><th>Company</th><th>Position</th><th>Tag</th><th>Services</th><th>Email</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div style="margin-top:12px;font-size:12px;color:var(--text2)" id="gwResultCount"></div>
+    </div>
+  </div>
+
 </div>
 
 <script>
@@ -869,6 +945,179 @@ const priorityOutreach = [
   ['Irena Palamani Xhurxhi','Walmart','Director People Science','high'],
 ];
 
+// === GHOSTWRITING PROSPECTS DATA ===
+const gwProspects = [
+// LEAKS — need ghostwriting directly
+["Nicolas Cole 🚢👻","Premium Ghostwriting Academy","Co-Founder","","Leak","Email Course, Newsletter"],
+["Dickie Bush 🚢","Premium Ghostwriting Academy","Co-Founder","","Leak","Email Course, Newsletter"],
+["Daniel Bustamante 🥷🏻","Velocity: Grow Your Revenue With Email","Founder","","Leak","Email Course, Social"],
+["Jesper Jensen","Jensen-Ghostwriting | Self-employed","Founder & Educational Email Funnel Strategist","","Leak","Email Course, Newsletter"],
+["Jovan Sewell","Jovan Sewell Ghostwriting","LinkedIn Ghostwriter for Short-Form Agency Founders","","Leak","Newsletter, Social"],
+["Dylan Latour","Inkpress Digital","Founder & Ghostwriter","","Leak","Newsletter, Social"],
+["Adam Kermally","@Rockets_Insider","Co-Founder and Writing Contributor","","Leak","Newsletter, Social"],
+["Andrew Jones","Data Science Infinity","Founder & Lead Instructor","","Leak","Email Course"],
+["Michael Gendler","Ultraspeaking","Co-Founder + Head of Curriculum","","Leak","Email Course"],
+["Craig Fryar","Augmented Training Systems","CEO","","Leak","Email Course"],
+["Logan Gott","Gott Content","Founder","","Leak","Social"],
+["Matthias Frank","Matthias Frank Consulting","Founder | Notion Consultant","","Leak","Social"],
+["Alex Dobrenko","Code For Creatives","Founder and The Guy Doing Everything","","Leak","Social"],
+["James Moran","LinkedIntros","Founder","jamesemoraniv@gmail.com","Leak","Social"],
+["Phillip Tran","BANGERS!","Founder & Chief Executive Officer","phillip.tran@alumni.stanford.edu","Leak","Social"],
+["Rasheed Rabata","Capella Solutions","Founder","rasheed@capella.io","Leak","Social"],
+["Ashley Cooper","ADC Studios LLC","AI Design and Intelligent Systems Consultant","ashdcooper10@gmail.com","Leak","Social"],
+["Pietro Montaldo","NForce AI","Co-Founder","","Leak","Social"],
+["Cliff Weitzman","Speechify","Founder CEO","","Leak","Social"],
+["Nick Singh 📕🐒","DataLemur 🐒 (Ace the SQL Interview)","Founder & CEO","","Leak","Social"],
+["Matt McGarry","New Media Summit","Founder and CEO","","Leak","Social"],
+["Nat Eliason","Alpha School","Head of Founder Development","","Leak","Social"],
+["Ayodeji Awosika","Six Figure Career Coaches","Founder","","Leak","Social"],
+["Roxana Shirazi, M.Ed., MLA","The Content Design Co.","Founder","","Leak","Social"],
+["Rachel B. Lee","YOUmanize™","Co-Founder","","Leak","Social"],
+["Priya Sarkar","ThriveMark","Founder | Chief Branding Officer","","Leak","Social"],
+["Sainath Krishnamurthy","Fluency Creative","Founder and Creative Director","","Leak","Social"],
+["Pooja K","Growth Script","Founder","","Leak","Social"],
+["Louis Shulman","Orbit Marketing","Co-Founder","","Leak","Social"],
+["Christina Skillman","Skillman Video Group","Founder & Executive Creative Director","","Leak","Social"],
+["Emanuel Bagerakis","Emanuel Bagerakis","Founder, Creator","","Leak","Social"],
+["Celeste Yamile 🤖","BrandWise Accelerator","Founder & Coach","","Leak","Email Course, Social"],
+["Gabe Chia","Viral College","Founder & Head Coach","","Leak","Email Course, Social"],
+["Pavel Antonov","Targetorium - School of Marketing & Advertising","Founder & CRO","","Leak","Email Course, Social"],
+["Haley Scruggs","A Lighter Way Consulting","Founder & Career Coach","","Leak","Email Course, Social"],
+["Robin Waite","Fearless Business","Founder","","Leak","Social"],
+["Nick Saraev","Skool","Founder, Maker School","","Leak","Social"],
+["Jason Chin","Easlo","Founder","","Leak","Social"],
+["Kareem Abukhadra","Relentless","Founder","","Leak","Social"],
+["Greg Philippe","PreSell OS","Founder","","Leak","Social"],
+["Jed Mahrle","Practical Prospecting","Founder & CEO","","Leak","Social"],
+["Jordan DiPietro","Jordan DiPietro","Founder / Advisor","","Leak","Social"],
+["Saku Fadiga","Paid Media Lab","Founder","","Leak","Social"],
+["James Dickerson","Boringmarketing.com","Co-Founder","","Leak","Social"],
+["Steven Picanza ✌️🍕","ANEWbrand","Co-Founder & Creative Brand Director","","Leak","Social"],
+["Amita Batra","Boundless by Amita","Founder & Creative Director","","Leak","Social"],
+["Dominik Metlicic","Ultimate Leads Funnel","Founder & CEO","","Leak","Social"],
+["Emma Valahu","Inbox Journeys","Founder","","Leak","Social"],
+["Aditya Patel","STRATMEDIA","Founder & CEO","","Leak","Social"],
+["Richard Hill","eComOne - eCommerce Marketing Agency","CEO & Founder","","Leak","Social"],
+["Josh Lowman","Gold Front","Founder / CEO","","Leak","Social"],
+["Errol Doebler","Ice Cold Leader","Founder and CEO","","Leak","Social"],
+["Frank Ceballos CPM","Lead with Excellence LLC","Founder & CEO","","Leak","Social"],
+["Andrew Tan","TLDR","Founder of TLDR AI & TLDR Founders","","Leak","Social"],
+["Candice Gasperini","Pioneers of change","Founder","","Leak","Social"],
+["Danny Goldberg","Danny Goldberg Speaks","Founder & Keynote Speaker","","Leak","Social"],
+["Mike Sutcliff","Thoughtworks","Chief Executive Officer","","Leak","Social"],
+["Dave de Céspedes","Workcraft Labs","Founder & Lead Consultant","","Leak","Social"],
+["Joanna Wallace (Sloame)","CreativeRx Consulting","Founder, CreativeRx Consulting","","Leak","Social"],
+["Jedrzej Tabaczynski, EMBA","Vons Consulting","Founder & Engineering Consultant","","Leak","Social"],
+["Ronak Patel","Umbrage","Co-Founder & Chief Digital Officer","","Leak","Social"],
+["Carly Valancy","Momentum Growth","Co-Founder","","Leak","Social"],
+["Farnaz Hassani","AURIA","Founder","","Leak","Social"],
+["Abhinav Mugunda","Stealth Startup","Cofounder","","Leak","Social"],
+["Kevin Bultongez","Adora AI","Co-Founder","","Leak","Social"],
+["Carolina Posma","Postiv AI","Founder","","Leak","Social"],
+["Bold-Erdene Battur","Zogsoltgui","Co-Founder","","Leak","Social"],
+["Rahul Jindal","RJ Media","Founder","","Leak","Social"],
+["Joe Hudson","The Art of Accomplishment","Founder","","Leak","Social"],
+["Joseph Choi","Consumer Club","Founder, Private Community","","Leak","Social"],
+["Kritika Oberoi","Looppanel","Co-Founder","","Leak","Social"],
+["Jeremy Schifeling","The Job Insiders","Founder","","Leak","Social"],
+["Charlie Hills 🦩","Vislo AI","Co-Founder","","Leak","Social"],
+["Katie Marietta-Tondin","Lit Up","Founder","","Leak","Social"],
+["Kelsie Fitzhenry","meltdown studio","Founder & CEO","","Leak","Social"],
+["Meera Patel","Third Space","Founder & Community Systems Lead","","Leak","Social"],
+["Nathan May","The Feed Media","Founder","","Leak","Social"],
+["Matteo Tittarelli","Genesys","Founder & Solopreneur","","Leak","Social"],
+["Nina Rockstedt","Rockstedt Creative","Founder / Creative Consultant","","Leak","Social"],
+["Roxine Kee","FounderInbound","Founder","","Leak","Social"],
+["Katt Risen","Build The Keyword","Founder","","Leak","Social"],
+["Colin Gallagher","Growlancer","Founder","","Leak","Social"],
+["Bharath Kurapati","FeatureBox AI","Co-Founder & CEO","","Leak","Social"],
+["Gene Kamenez","Uxcel Inc.","Chief Executive Officer","","Leak","Social"],
+["Gardar Stefansson","GOOD GOOD","CEO & Co-founder","","Leak","Social"],
+["Christian Lau","Dynamo AI","Co-founder & Chief Product Officer","","Leak","Social"],
+["Hadelin de Ponteves, Hon. PhD","CloudWolf","Co-Founder","","Leak","Social"],
+["Coral Elizabeth","Savage Ops","Founder","","Leak","Social"],
+["Ethan Kinnan","Sherpa (YC X26)","Co-Founder & CEO","","Leak","Social"],
+["Rohit Rajaram","Kraya AI","Co-Founder","","Leak","Social"],
+["Henning Schwinum","Vendux LLC","Co-Founder & Managing Partner","","Leak","Social"],
+["Jean-Luc Chatelain","Verax Capital Advisors","Founder & Managing Partner","","Leak","Social"],
+["Mary Caroline Kreps","Kreps Consulting LLC","Principal Consultant and Founder","","Leak","Social"],
+["Melissa Daly","ADP","Vice President of Sales - Major Accounts Core","","Leak","Social"],
+["Dr. Lonneishea Meeks PMP","AI Ignition Hub","Founder","","Leak","Social"],
+["Steve Cunningham","AI ROI Association","Founder","","Leak","Social"],
+["Anatolii Ulitovskyi","UNmiss","Founder","","Leak","Social"],
+["Vijay Jacob","AEO Engine","Founder","","Leak","Social"],
+// FAUCETS — know people who need ghostwriting
+["Matthew C Brown","Tribe Digital","'Cowriting' Agency Owner","","Faucet","Newsletter"],
+["David Ohrvall","Generational Group","Chief Marketing Officer","","Faucet","Social"],
+["Emma O'Grady","Ticket Wallet (YC X25)","Chief Marketing Officer","","Faucet","Social"],
+["Harshana Ariyaratne","Google","Head of Marketing APAC - Google Cloud","","Faucet","Social"],
+["Alisa Itskova","Ourcart","Head of Marketing (Fractional)","","Faucet","Social"],
+["Dragostina Slavova","URBO Studio","Head of Marketing","","Faucet","Social"],
+["Dromonte Montgomery","The Uproot Agency","COO & Head of Marketing Strategy","","Faucet","Social"],
+["Anna Tankel 🌱","Freelance","Fractional B2B Head of Growth","","Faucet","Social"],
+["Richard Hulskes","Siemens","Head of Growth","","Faucet","Social"],
+["Marvin Aziz","Lindy","Head of Community","","Faucet","Social"],
+["Robert Fraze","Free Rein Coffee Company","Head of Brand","","Faucet","Social"],
+["Jason Alvarez","Mutual of America Financial Group","VP, Head of Talent Acquisition","","Faucet","Social"],
+["David Argudin","Bayside Printing Company","Marketing Director & Sales","","Faucet","Social"],
+["Demin Wang, PMP","Vego Garden","Marketing Director","","Faucet","Social"],
+["Mohammad Kobtan","AnyMind Group","Brand Partnerships & Influencer Marketing Director","","Faucet","Social"],
+["Tricia Horn Robinson","Accenture","Managing Director Talent & Organization","","Faucet","Social"],
+["Christopher Buck","Tokio Marine HCC","Director Talent Acquisition","","Faucet","Social"],
+["John Klein","Astera Labs","Director Talent Acquisition","","Faucet","Social"],
+["Lenia Jackson","Confluent Health","Director Talent Operations","","Faucet","Social"],
+["Melissa Gray","York Space Systems LLC","Director Talent Acquisition","","Faucet","Social"],
+["Galaan Abdissa","Microsoft","Product Marketing Manager II","","Faucet","Social"],
+["Joshua Willard","Microsoft","Product Marketing Manager | Microsoft Foundry","","Faucet","Social"],
+["Ahsan Ashraf","Google","Senior Product Marketing Manager","","Faucet","Social"],
+["Amy Coyle","Google","Marketing Manager","","Faucet","Social"],
+["Dustin Hart","Kit","Lead Creator Growth Manager","","Faucet","Social"],
+["Elizabeth Kidney","MongoDB","Global Recruiting Manager, Sales Development","","Faucet","Social"],
+["Evan Hickam","Adobe","Talent Partner IV","","Faucet","Social"],
+["Connor Brim","Coder","Recruiting Manager","","Faucet","Social"],
+["Dustin Laycock","Bestow","Senior Recruiting Manager","","Faucet","Social"],
+["Austin Mueting","TalentEdge Partners","Principal Talent Partner","","Faucet","Social"],
+["Celina St. Hilaire","Schaefer Outfitter","Brand & Community Manager","","Faucet","Social"],
+["Angalee Rose Nguyen","A&C Plastics, Inc.","Marketing Brand Manager","","Faucet","Social"],
+["Francesca Salluzzo","HealthMark Group","Regional Sales Director","","Faucet","Social"],
+["Cara Callahan","Block","Senior Recruiter","","Faucet","Social"],
+["Jackie Rindlisbach","Talentful","Senior Talent Partner","","Faucet","Social"],
+["Angie Dickson","Strava","Talent Partner","","Faucet","Social"],
+["Brison Ruto","Vensure Employer Solutions","Global Talent Partner","","Faucet","Social"],
+];
+
+let gwActiveFilter = 'all';
+
+function filterGhostwriting() {
+  const q = document.getElementById('gwSearch').value.toLowerCase();
+  const rows = document.getElementById('gwTable').querySelectorAll('tbody tr');
+  let visible = 0;
+  rows.forEach(r => {
+    const text = r.textContent.toLowerCase();
+    const tag = r.dataset.tag;
+    const svc = r.dataset.services;
+    const email = r.dataset.email;
+    let matchFilter = true;
+    if (gwActiveFilter === 'Leak') matchFilter = tag === 'Leak';
+    else if (gwActiveFilter === 'Faucet') matchFilter = tag === 'Faucet';
+    else if (gwActiveFilter === 'Social') matchFilter = svc.includes('Social');
+    else if (gwActiveFilter === 'Email Course') matchFilter = svc.includes('Email Course');
+    else if (gwActiveFilter === 'Newsletter') matchFilter = svc.includes('Newsletter');
+    else if (gwActiveFilter === 'has-email') matchFilter = email && email.length > 0;
+    const show = text.includes(q) && matchFilter;
+    r.style.display = show ? '' : 'none';
+    if (show) visible++;
+  });
+  document.getElementById('gwResultCount').textContent = `Showing ${visible} of ${gwProspects.length} prospects`;
+}
+
+function toggleGwFilter(btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  gwActiveFilter = btn.dataset.filter;
+  filterGhostwriting();
+}
+
 // === RENDER CHARTS ===
 function createCharts() {
   // Growth chart
@@ -1091,6 +1340,19 @@ function renderTables() {
   jobMessages.forEach(([p, d, kw, s]) => {
     jmBody.innerHTML += `<tr><td>${p}</td><td style="font-family:var(--mono);font-size:12px;white-space:nowrap">${d}</td><td><span class="badge warm">${kw}</span></td><td class="msg-snippet">${s}</td></tr>`;
   });
+
+  // Ghostwriting prospects
+  const gwBody = document.querySelector('#gwTable tbody');
+  let emailCount = 0;
+  gwProspects.forEach(([n,co,p,e,tag,svc], i) => {
+    if (e) emailCount++;
+    const tagClass = tag === 'Leak' ? 'leak' : 'faucet';
+    const svcs = svc.split(', ').map(s => `<span class="badge svc">${s}</span>`).join('');
+    const emailCol = e ? `<span style="font-family:var(--mono);font-size:11px">${e}</span>` : '<span style="color:var(--text2);font-size:11px">—</span>';
+    gwBody.innerHTML += `<tr data-tag="${tag}" data-services="${svc}" data-email="${e}"><td>${i+1}</td><td>${n}</td><td>${co}</td><td>${p}</td><td><span class="badge ${tagClass}">${tag}</span></td><td>${svcs}</td><td>${emailCol}</td></tr>`;
+  });
+  document.getElementById('gwEmailCount').textContent = emailCount;
+  document.getElementById('gwResultCount').textContent = `Showing ${gwProspects.length} of ${gwProspects.length} prospects`;
 }
 
 // === INIT (deferred until auth) ===
